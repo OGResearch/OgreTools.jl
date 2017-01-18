@@ -24,6 +24,18 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       m1c = parseFile(testModelPath)
       @test m1 == m1c
     end # testset "parseFile"
+    # overloaded methods for existing functions
+    @testset "- overloaded" begin
+      m2 = parseFile(testModelPath)
+      # print()
+      @test print(m2) == nothing
+      # show()
+      @test show(m2) == nothing
+      # copy()
+      m2c = copy(m2)
+      @test m2 == m2c
+      @test !is(m2,m2c)
+    end # testset "parseFile"
   end # testset "Basics"
 
   @testset "Parsing" begin
