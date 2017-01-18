@@ -14,3 +14,28 @@ Install within Julia using
 ```jl
     Pkg.clone("https://github.com/nul0m/OgreTools.jl.git")
     Pkg.build("OgreTools")
+```
+
+## Testing
+
+Test the package by running
+```jl
+    Pkg.test("OgreTools")
+```
+
+## Examples
+
+### Parsing
+
+Parse a model file and create an object containing parsed model:
+
+```jl
+using OgreTools
+modpath = joinpath(Pkg.dir(),"OgreTools","test","test_model.mod")
+# by default dynamic part of equations is used
+mParsed = parseFile(modpath)
+print(mParsed)
+# to use steady-state part of the equation (when present) use isSstate option
+mParsedSstate = parseFile(modpath,isSstate=true)
+print(mParsedSstate)
+```
