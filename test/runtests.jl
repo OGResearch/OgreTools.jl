@@ -5,6 +5,8 @@ using Base.Test
 const testPath = dirname(@__FILE__)
 const testModelPath = joinpath(testPath, "test_model.mod")
 
+## todo: test exception handling
+
 @testset "All tests" begin
 
   @testset "Basics" begin
@@ -35,6 +37,10 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       m2c = copy(m2)
       @test m2 == m2c
       @test !is(m2,m2c)
+      # deepcopy()
+      m2c = deepcopy(m2)
+      @test m2 == m2c
+      @test !is(m2,m2c)
     end # testset "parseFile"
   end # testset "Basics"
 
@@ -50,7 +56,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     mExpected.exognames   = ["alpha","beta","delta","gamma","xi"]
     mExpected.eqs = [
       "C + I'n = A*K^alpha"
-      "K'n = delta*K(-1) + I(-1)*(1+(1-I(-1)/I(-2))^2)"
+      "K'n = delta*K(-1) + I(-1)*(1-(1-I(-1)/I(-2))^2)"
       "C'n^(-gamma) = beta*C(+1)^(-gamma)*(A(+1)*alpha*K(+1)^(alpha-1) + delta)"
       "A'n = A(-1)^rho'p*exp(xi)"
     ]
@@ -62,7 +68,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     ]
     mExpected.res_expr = map(parse,[
       "(db,t) -> db[t,2]+db[t,3]-(db[t,1]*db[t,4]^db[t,5])"
-      "(db,t) -> db[t,4]-(db[t,7]*db[t-1,4]+db[t-1,3]*(1+(1-db[t-1,3]/db[t-2,3])^2))"
+      "(db,t) -> db[t,4]-(db[t,7]*db[t-1,4]+db[t-1,3]*(1-(1-db[t-1,3]/db[t-2,3])^2))"
       "(db,t) -> db[t,2]^(-db[t,8])-(db[t,6]*db[t+1,2]^(-db[t,8])*(db[t,7]+db[t,5]*db[t+1,1]*db[t+1,4]^(db[t,5]-1)))"
       "(db,t) -> db[t,1]-(db[t-1,1]^db[t,9]*exp(db[t,10]))"
     ])
@@ -97,8 +103,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       "(db,t) -> 1"
       "(db,t) -> -(db[t,1]) * db[t,5] * db[t,4] ^ (db[t,5] - 1)"
       "(db,t) -> -(db[t,1]) * db[t,4] ^ db[t,5] * log(db[t,4])"
-      "(db,t) -> -(db[t - 1,3]) * (-(-(db[t - 1,3])) / (db[t - 2,3] * db[t - 2,3])) * 2 * (1 - db[t - 1,3] / db[t - 2,3]) ^ (2 - 1)"
-      "(db,t) -> -((1 + (1 - db[t - 1,3] / db[t - 2,3]) ^ 2 + db[t - 1,3] * 2 * (1 - db[t - 1,3] / db[t - 2,3]) ^ (2 - 1) * (-1 / db[t - 2,3])))"
+      "(db,t) -> -(db[t - 1,3]) * (-(-(-(db[t - 1,3])) / (db[t - 2,3] * db[t - 2,3])) * 2 * (1 - db[t - 1,3] / db[t - 2,3]) ^ (2 - 1))"
+      "(db,t) -> -(((1 - (1 - db[t - 1,3] / db[t - 2,3]) ^ 2) + db[t - 1,3] * (-2 * (1 - db[t - 1,3] / db[t - 2,3]) ^ (2 - 1) * (-1 / db[t - 2,3]))))"
       "(db,t) -> -(db[t,7])"
       "(db,t) -> 1"
       "(db,t) -> -(db[t - 1,4])"
@@ -116,6 +122,12 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       "(db,t) -> -(db[t - 1,1] ^ db[t,9]) * exp(db[t,10])"
     ])
     mExpected.jac_fun = map(eval,mExpected.jac_expr)
+    # assign all counters
+    mExpected.nvars = 4
+    mExpected.nexog = 5
+    mExpected.nparams = 1
+    mExpected.maxlag = 2
+    mExpected.maxlead = 1
 
     @test mParsed == mExpected
 

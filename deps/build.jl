@@ -6,6 +6,7 @@ deps = [
     libparser = library_dependency("libparser")
 ]
 
+# add Binaries provider to the list of available providers for Linux
 if is_linux()
   push!(BinDeps.defaults, Binaries)
 end # if
@@ -24,6 +25,7 @@ provides(Binaries,
     (:libparser, :_jl_libparser),
 ])
 
+# remove Binaries provider from the list of available providers for Linux
 if is_linux()
   pop!(BinDeps.defaults)
 end # if

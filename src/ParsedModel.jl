@@ -1,8 +1,3 @@
-
-export ParsedModel, parseFile
-
-import Base: show, copy, print, ==
-
 type ParsedModel
 
   ### Properties
@@ -28,18 +23,16 @@ type ParsedModel
   jac_fun::Array{Function,1}
   # An expression array (vector)c representing the functions from the jac_fun
   jac_expr::Array{Expr,1}
-
-  ### Internal methods
   # Returns number of endogenous variables
-  nvars::Function
+  nvars::Int32
   # Returns number of exogenous variables
-  nexog::Function
+  nexog::Int32
   # Returns number of exogenous variables declared as parameters
-  nparams::Function
+  nparams::Int32
   # Returns maximum lag of endogenous variables
-  maxlag::Function
+  maxlag::Int32
   #	Returns maximum lead of endogenous variables
-  maxlead::Function
+  maxlead::Int32
 
   ### Constructor
   ParsedModel() = (x = new();
@@ -54,11 +47,11 @@ type ParsedModel
     x.jac_ind = Array{Int32,2}(0,0);
     x.jac_fun = Array{Function,1}(0);
     x.jac_expr = Array{Expr,1}(0);
-    x.nvars = () -> length(x.endognames);
-    x.nexog = () -> length(x.exognames);
-    x.nparams = () -> length(x.paramnames);
-    x.maxlag = () -> (length(x.jac_ind) > 0) ? -minimum(x.jac_ind[:,1]) : 0;
-    x.maxlead = () -> (length(x.jac_ind) > 0) ? maximum(x.jac_ind[:,1]) : 0;
+    x.nvars = 0; # () -> length(x.endognames);
+    x.nexog = 0; # () -> length(x.exognames);
+    x.nparams = 0; # () -> length(x.paramnames);
+    x.maxlag = 0; # () -> (length(x.jac_ind) > 0) ? -minimum(x.jac_ind[:,1]) : 0;
+    x.maxlead = 0; # () -> (length(x.jac_ind) > 0) ? maximum(x.jac_ind[:,1]) : 0;
     x)
 
 end # type ParsedModel
@@ -67,11 +60,11 @@ end # type ParsedModel
 # to be used with the ParsedModel type
 function Base.show(io::IO, pm::ParsedModel)
   println(io, "Object of type `ParsedModel`")
-  println(io, "Endogenous variables ($(pm.nvars())): $(pm.endognames)")
-  println(io, "Exogenous variables ($(pm.nexog())): $(pm.exognames)")
-  println(io, "Parameters ($(pm.nparams())): $(pm.paramnames)")
-  println(io, "Maximum lag: $(pm.maxlag())")
-  println(io, "Maximum lead: $(pm.maxlead())")
+  println(io, "Endogenous variables ($(pm.nvars)): $(pm.endognames)")
+  println(io, "Exogenous variables ($(pm.nexog)): $(pm.exognames)")
+  println(io, "Parameters ($(pm.nparams)): $(pm.paramnames)")
+  println(io, "Maximum lag: $(pm.maxlag)")
+  println(io, "Maximum lead: $(pm.maxlead)")
 end # function Base.show()
 
 # New method for the standard `copy` function
@@ -117,7 +110,7 @@ function Base.print(pm::ParsedModel)
   # report equations
   println("Model equations\n")
   ml = maximum(vcat(0,length.(pm.eqlabs)))
-  for i = 1:pm.nvars()
+  for i = 1:pm.nvars
     println("\t" * lpad(pm.eqlabs[i],ml," ") * ":\t" * pm.eqs[i] * "\n")
   end # for
 end # function Base.print()
@@ -127,28 +120,28 @@ end # function Base.print()
 function Base.:(==)(pm1::ParsedModel,pm2::ParsedModel)
   print("Comparing objects of type `ParsedModel`: ")
   # compare numbers of endogenous variables
-  if (pm1.nvars() != pm2.nvars())
-    println("models are different\n\tnvars: $(pm1.nvars()) != $(pm2.nvars())")
+  if (pm1.nvars != pm2.nvars)
+    println("models are different\n\tnvars: $(pm1.nvars) != $(pm2.nvars)")
     return false
   end
   # compare numbers of exogenous variables
-  if (pm1.nexog() != pm2.nexog())
-    println("models are different\n\tnexog: $(pm1.nexog()) != $(pm2.nexog())")
+  if (pm1.nexog != pm2.nexog)
+    println("models are different\n\tnexog: $(pm1.nexog) != $(pm2.nexog)")
     return false
   end
   # compare numbers of parameters
-  if (pm1.nparams() != pm2.nparams())
-    println("models are different\n\tnparams: $(pm1.nparams()) != $(pm2.nparams())")
+  if (pm1.nparams != pm2.nparams)
+    println("models are different\n\tnparams: $(pm1.nparams) != $(pm2.nparams)")
     return false
   end
   # compare maximum lags
-  if (pm1.maxlag() != pm2.maxlag())
-    println("models are different\n\tmaxlag: $(pm1.maxlag()) != $(pm2.maxlag())")
+  if (pm1.maxlag != pm2.maxlag)
+    println("models are different\n\tmaxlag: $(pm1.maxlag) != $(pm2.maxlag)")
     return false
   end
   # compare maximum leads
-  if (pm1.maxlead() != pm2.maxlead())
-    println("models are different\n\tmaxlead: $(pm1.maxlead()) != $(pm2.maxlead())")
+  if (pm1.maxlead != pm2.maxlead)
+    println("models are different\n\tmaxlead: $(pm1.maxlead) != $(pm2.maxlead)")
     return false
   end
   # compare names of model symbols
@@ -241,8 +234,8 @@ function parseFile(fileName::String; isSstate::Bool=false)
     errorMessageRef)
   if (retCode == 0)
     # assign equations and their labels
-    mod.eqs = map(unsafe_string,unsafe_wrap(Array, eqsRef[], nEqtnRef[], true))
-    mod.eqlabs = map(unsafe_string,unsafe_wrap(Array, eqLabelsRef[], nEqtnRef[], true))
+    mod.eqs = map((x)->strip(unsafe_string(x)),unsafe_wrap(Array, eqsRef[], nEqtnRef[], true))
+    mod.eqlabs = map((x)->strip(unsafe_string(x)),unsafe_wrap(Array, eqLabelsRef[], nEqtnRef[], true))
     # process and assign equations' expressions
     eqStrings = map(unsafe_string,unsafe_wrap(Array, eqFormulasRef[], nEqtnRef[], true))
     # convert equation strings to expressions and anonymous functions
@@ -273,6 +266,19 @@ function parseFile(fileName::String; isSstate::Bool=false)
     jac_arr = map((x)->unsafe_wrap(Array,x,3,true),
                   unsafe_wrap(Array,derIndicesRef[],nDersRef[],true))
     mod.jac_ind = hcat(jac_arr...)'
+    # assign all counters
+    mod.nvars = length(mod.endognames)
+    mod.nexog = length(mod.exognames)
+    mod.nparams = length(mod.paramnames)
+    if (length(mod.jac_ind) == 0)
+      mod.maxlag = 0
+      mod.maxlead = 0
+    else
+      nlags = sum(mod.jac_ind[:,1] .< 0)
+      nleads = sum(mod.jac_ind[:,1] .> 0)
+      mod.maxlag = (nlags > 0) ? -minimum(mod.jac_ind[:,1]) : 0
+      mod.maxlead = (nleads > 0) ? maximum(mod.jac_ind[:,1]) : 0
+    end # if
 
     return mod
   else
