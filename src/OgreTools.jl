@@ -5,7 +5,7 @@ module OgreTools
 # check if the package was properly built
 depsjl = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
 isfile(depsjl) ? include(depsjl) : error("OgreTools not properly ",
-    "installed. Please run\nPkg.build(\"OgreTool\")")
+    "installed. Please run\nPkg.build(\"OgreTools\")")
 
 # import Base methods to be overloaded
 import Base: show, copy, print, ==
