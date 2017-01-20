@@ -6,6 +6,7 @@ Windows: [![Build status](https://ci.appveyor.com/api/projects/status/nvnlxyjhco
 
 Code coverage: [![Coverage Status](https://coveralls.io/repos/github/nul0m/OgreTools.jl/badge.svg?branch=master)](https://coveralls.io/github/nul0m/OgreTools.jl?branch=master)
 
+## OgreTools
 
 Set of tools for macroeconomic modeling in Julia. 
 
