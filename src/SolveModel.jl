@@ -21,7 +21,7 @@ type SolveModel
 
 end
 
-function SolveModel(m::ParsedModel,db_init,db_targ,rng)
+function SolveModel(m::ParsedModel,db_init::DataBase,db_targ::DataBase,rng)
 
   stacked_jac = get_stacked_jac(m,rng - db_targ.firstdate + 1)
 
@@ -49,16 +49,20 @@ function SolveModel(m::ParsedModel,db_init,db_targ,rng)
 
 end
 
+function SolveModel(m::ParsedModel,db::DataBase,rng)
+  return SolveModel(m, db, db, rng)
+end
+
 function get_endog_ind(m::ParsedModel)
-
+  
   endog_ind = Array{Int}(0)
-
+  
   for name in m.endognames
     append!(endog_ind,findin(m.allnames,[name]))
   end
-
+  
   return endog_ind
-
+  
 end
 
 function get_stacked_jac(m::ParsedModel, rng)
@@ -69,14 +73,14 @@ function get_stacked_jac(m::ParsedModel, rng)
   times = Array{Int,1}(0)
   funs  = Array{Function,1}(0)
   exprs = Array{Expr,1}(0)
-
+  
   # Keep only derivatives w/resp to endogenous variables
   endog_ind = get_endog_ind(m)
   ind = findin(m.jac_ind[:,3], endog_ind)
   jac_ind   = m.jac_ind[ind,:]
   jac_fun   = m.jac_fun[ind]
   jac_exprs = m.jac_expr[ind]
-
+  
   # Replace "indeces in database" with "indeces in Jacobian block"
   for i = 1:size(jac_ind,1)
     jac_ind[i,3] = findin(endog_ind,jac_ind[i,3])[1]
@@ -138,7 +142,7 @@ function get_stacked_jac(m::ParsedModel, rng)
     end
 
   end
-
+  
   return [ro co times], funs, exprs
 
 end
@@ -162,20 +166,20 @@ function eval_derivatives(m::SolveModel)
   co    = m.stacked_jac_ind[:,2]
   times = m.stacked_jac_ind[:,3]
   vals  = Array{Float64,1}(length(ro))
-
+  
   # display(m.db_targ)
-
+  
   for i = 1:length(vals)
     vals[i] = m.stacked_jac_fun[i](m.db_targ,times[i])
     if i in [5 11]
       # println(m.stacked_jac_expr[i])
     end
   end
-
+  
   nT = m.mod.nvars*length(m.range)
 
   Jac = sparse(ro, co, vals, nT, nT)
-
+  
   # display([ro co times vals])
   # display(full(Jac))
 
@@ -188,6 +192,14 @@ function residual(m::SolveModel,x)
   put_x_to_db!(m,x)
   res = eval_equations(m)
   return res
+
+end
+
+function residual!(m::SolveModel)
+
+  res = eval_equations(m)
+  m.db_resid[m.range,:] = reshape(res,convert(Int,m.mod.nvars),length(m.range))'
+  return m
 
 end
 
@@ -239,13 +251,8 @@ function solve!(m::SolveModel)
   m.iter = iter
   m.resnorm = resnorm
   m.time = now()
-
-  # for i = 1:m.mod.nvars()
-    # m.db_resid[m.mod.eqlabs[i]] = TimeSeries(m.daterange[1],res[i:m.mod.nvars():end])
-  # end
-
-  m.db_resid[m.range,:] = reshape(res,convert(Int,m.mod.nvars),length(m.range))'
-
+  residual!(m)
+  
 end
 
 function dac!(m::SolveModel,nstep)
@@ -289,7 +296,7 @@ end
 function get_x_from_db(m::SolveModel)
 
   x = []
-
+  
   for t = m.range
     for j = 1:m.mod.nvars
       push!(x,m.db_init[t,m.endog_ind[j]])
@@ -305,18 +312,18 @@ function endogenize!(m::SolveModel,varlist::Array{String,1})
   m.mod.endognames  = union(m.mod.endognames,   varlist)
   m.mod.exognames   = setdiff(m.mod.exognames,  varlist)
   m.mod.paramnames  = setdiff(m.mod.paramnames, varlist)
-
+  
   m.mod.nvars   = length(m.mod.endognames)
   m.mod.nexog   = length(m.mod.exognames)
   m.mod.nparams = length(m.mod.paramnames)
-
+  
   stacked_jac = get_stacked_jac(m.mod, m.range)
-
+  
   m.endog_ind         = get_endog_ind(m.mod)
   m.stacked_jac_ind   = stacked_jac[1]
   m.stacked_jac_fun   = stacked_jac[2]
   m.stacked_jac_expr  = stacked_jac[3]
-
+  
   return m
 
 end
@@ -330,18 +337,18 @@ function exogenize!(m::SolveModel,varlist::Array{String,1})
   m.mod.endognames  = setdiff(m.mod.endognames, varlist)
   m.mod.exognames   = union(m.mod.exognames,    varlist)
   m.mod.paramnames  = setdiff(m.mod.paramnames, varlist)
-
+  
   m.mod.nvars   = length(m.mod.endognames)
   m.mod.nexog   = length(m.mod.exognames)
   m.mod.nparams = length(m.mod.paramnames)
-
+  
   stacked_jac = get_stacked_jac(m.mod, m.range)
-
+  
   m.endog_ind         = get_endog_ind(m.mod)
   m.stacked_jac_ind   = stacked_jac[1]
   m.stacked_jac_fun   = stacked_jac[2]
   m.stacked_jac_expr  = stacked_jac[3]
-
+  
   return m
 
 end
@@ -355,7 +362,7 @@ function shock!(m::SolveModel,varname::String,daterange::OrdinalRange{Date},vals
   varind = findin(m.mod.allnames,[varname])[1]
   timerange = daterange - m.firstdate + 1
   m.db_targ[timerange,varind] = vals
-
+  
   return m
 
 end
@@ -365,7 +372,7 @@ function shock!(m::SolveModel,varname::String,date::Date,val::Number)
   varind = findin(m.mod.allnames,[varname])[1]
   timeind = date - m.firstdate + 1
   m.db_targ[timeind,varind] = val
-
+  
   return m
 
 end
@@ -374,10 +381,10 @@ function get_result(m::SolveModel)
 
   db_targ   = DataBase(m.db_targ,   m.mod.allnames, m.firstdate)
   db_resid  = DataBase(m.db_resid,  m.mod.eqlabs,   m.firstdate)
-
+  
   db_targ   = db_targ[m.daterange]
   db_resid  = db_resid[m.daterange]
-
+  
   return db_targ, db_resid
 
 end

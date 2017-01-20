@@ -236,3 +236,141 @@ function db2array(db::DataBase,varnames::Array{String,1})
   return array
 
 end
+
+function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
+
+  varnames  = collect(keys(db))
+  nvars     = length(varnames)
+  
+  data = db2array(db, varnames)
+  
+  plot(data, layout = nvars, legend = false, title = varnames')
+ 
+end
+
+import Base.+
+
+function +(db::DataBase, x::Number)
+
+  db1 = deepcopy(db)
+  
+  for name in keys(db1)
+    db1[name] = db1[name] + x
+  end
+  
+  return db1
+  
+end
+
+function +(x::Number, db::DataBase)
+  return db + x
+end
+
+function +(db1::DataBase, db2::DataBase)
+  
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.lastdate,  db2.lastdate)
+  db = DataBase(fd:ld)
+  
+  varnames1 = keys(db1)
+  varnames2 = keys(db2)
+  varnames = intersect(varnames1,varnames2)
+  
+  for name in varnames
+    db[name] = db1[name] + db2[name]
+  end
+  
+  return db
+
+end
+
+import Base.-
+
+function -(db::DataBase, x::Number)
+
+  db1 = deepcopy(db)
+  
+  for name in keys(db1)
+    db1[name] = db1[name] - x
+  end
+  
+  return db1
+  
+end
+
+function -(x::Number, db::DataBase)
+  return -db + x
+end
+
+function -(db1::DataBase, db2::DataBase)
+  
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.lastdate,  db2.lastdate)
+  db = DataBase(fd:ld)
+  
+  varnames1 = keys(db1)
+  varnames2 = keys(db2)
+  varnames = intersect(varnames1,varnames2)
+  
+  for name in varnames
+    db[name] = db1[name] - db2[name]
+  end
+  
+  return db
+
+end
+
+import Base.*
+
+function *(db::DataBase, x::Number)
+
+  db1 = deepcopy(db)
+  
+  for name in keys(db1)
+    db1[name] = db1[name]*x
+  end
+  
+  return db1
+  
+end
+
+function *(x::Number, db::DataBase)
+  return db*x
+end
+
+function *(db1::DataBase, db2::DataBase)
+  
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.lastdate,  db2.lastdate)
+  db = DataBase(fd:ld)
+  
+  varnames1 = keys(db1)
+  varnames2 = keys(db2)
+  varnames = intersect(varnames1,varnames2)
+  
+  for name in varnames
+    db[name] = db1[name]*db2[name]
+  end
+  
+  return db
+
+end
+
+import Base./
+function /(db1::DataBase, db2::DataBase)
+  
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.lastdate,  db2.lastdate)
+  db = DataBase(fd:ld)
+  
+  varnames1 = keys(db1)
+  varnames2 = keys(db2)
+  varnames = intersect(varnames1,varnames2)
+  
+  for name in varnames
+    db[name] = db1[name]/db2[name]
+  end
+  
+  return db
+
+end

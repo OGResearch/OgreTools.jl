@@ -1,4 +1,3 @@
-using Plots
 
 type TimeSeries
   firstdate::Date
@@ -109,7 +108,7 @@ end
 
 import Base.*
 *(num::Number,ts::TimeSeries) = TimeSeries(ts.firstdate,ts.values * num)
-*(ts::TimeSeries,num::Number) = TimeSeries(ts.firstdate,ts.values)
+*(ts::TimeSeries,num::Number) = TimeSeries(ts.firstdate,num * ts.values)
 function *(ts1::TimeSeries,ts2::TimeSeries)
   ts11 = deepcopy(ts1)
   ts21 = deepcopy(ts2)
