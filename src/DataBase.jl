@@ -237,16 +237,16 @@ function db2array(db::DataBase,varnames::Array{String,1})
 
 end
 
-function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
+# function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
 
-  varnames  = collect(keys(db))
-  nvars     = length(varnames)
+  # varnames  = collect(keys(db))
+  # nvars     = length(varnames)
   
-  data = db2array(db, varnames)
+  # data = db2array(db, varnames)
   
-  plot(data, layout = nvars, legend = false, title = varnames')
+  # plot(data, layout = nvars, legend = false, title = varnames')
  
-end
+# end
 
 import Base.+
 

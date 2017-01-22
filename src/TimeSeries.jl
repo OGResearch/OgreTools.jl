@@ -461,21 +461,21 @@ function Base.range(ts::TimeSeries)
   return range(ts.firstdate, length(ts.values))
 end
 
-function Plots.plot(ts::TimeSeries)
+# function Plots.plot(ts::TimeSeries)
 
-  fy, fp, freq = ypf(ts.firstdate)
+  # fy, fp, freq = ypf(ts.firstdate)
 
-   # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
-  if fp == 1
-    fxtick = 1
-  else
-    fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
-  end
+   Use the first period of the first full year as the first xtick (assuming that the series is long enough)
+  # if fp == 1
+    # fxtick = 1
+  # else
+    # fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
+  # end
 
-  step = freq
-  xticks = fxtick:step:length(ts)
-  xticklabels = dat2str(range(ts)[xticks])
+  # step = freq
+  # xticks = fxtick:step:length(ts)
+  # xticklabels = dat2str(range(ts)[xticks])
 
-  plot(ts.values, xticks=(xticks, xticklabels), legend = false)
+  # plot(ts.values, xticks=(xticks, xticklabels), legend = false)
 
-end
+# end
