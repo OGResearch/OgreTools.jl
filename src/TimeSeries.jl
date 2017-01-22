@@ -465,7 +465,7 @@ end
 
   # fy, fp, freq = ypf(ts.firstdate)
 
-   Use the first period of the first full year as the first xtick (assuming that the series is long enough)
+   # # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
   # if fp == 1
     # fxtick = 1
   # else
