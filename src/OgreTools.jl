@@ -33,7 +33,7 @@ include("SolveModel.jl")
 export SolveModel, solve!,
        get_endog_ind, get_stacked_jac,
        eval_equations, eval_derivatives,
-       residual, jacobian,
+       residual, residual!, jacobian,
        dac!, homotopy!,
        put_x_to_db!, get_x_from_db,
        endogenize!, exogenize!,
