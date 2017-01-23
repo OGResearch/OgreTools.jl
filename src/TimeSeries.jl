@@ -1,4 +1,6 @@
 
+using Plots
+
 type TimeSeries
   firstdate::Date
   values::Array{Number,1}
@@ -465,15 +467,18 @@ function Plots.plot(ts::TimeSeries)
 
   fy, fp, freq = ypf(ts.firstdate)
 
-   # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
-  if fp == 1
-    fxtick = 1
+  if length(ts) > 12
+    # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
+    if fp == 1
+      fxtick = 1
+    else
+      fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
+    end
+    step = freq
+    xticks = fxtick:step:length(ts)
   else
-    fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
+    xticks = 1:length(ts) # Use all ticks for short series
   end
-
-  step = freq
-  xticks = fxtick:step:length(ts)
   xticklabels = dat2str(range(ts)[xticks])
 
   plot(ts.values, xticks=(xticks, xticklabels), legend = false)

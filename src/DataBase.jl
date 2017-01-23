@@ -1,4 +1,6 @@
 
+using Plots
+
 type DataBase
   firstdate::Date
   lastdate::Date
@@ -237,16 +239,16 @@ function db2array(db::DataBase,varnames::Array{String,1})
 
 end
 
-# function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
+function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
 
-  # varnames  = collect(keys(db))
-  # nvars     = length(varnames)
+  varnames  = collect(keys(db))
+  nvars     = length(varnames)
   
-  # data = db2array(db, varnames)
+  data = db2array(db, varnames)
   
-  # plot(data, layout = nvars, legend = false, title = varnames')
+  plot(data, layout = nvars, legend = false, title = varnames')
  
-# end
+end
 
 import Base.+
 
@@ -357,6 +359,31 @@ function *(db1::DataBase, db2::DataBase)
 end
 
 import Base./
+
+function /(db::DataBase, x::Number)
+
+  db1 = deepcopy(db)
+  
+  for name in keys(db1)
+    db1[name] = db1[name]/x
+  end
+  
+  return db1
+  
+end
+
+function /(x::Number, db::DataBase)
+  
+  db1 = deepcopy(db)
+  
+  for name in keys(db1)
+    db1[name] = x/db1[name]
+  end
+  
+  return db1
+  
+end
+
 function /(db1::DataBase, db2::DataBase)
   
   fd = min(db1.firstdate, db2.firstdate)
