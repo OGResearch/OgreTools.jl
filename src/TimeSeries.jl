@@ -467,7 +467,7 @@ function Plots.plot(ts::TimeSeries)
 
   fy, fp, freq = ypf(ts.firstdate)
 
-  if length(ts) > 12
+  if length(ts) > 6
     # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
     if fp == 1
       fxtick = 1
