@@ -38,6 +38,61 @@ function Date(freq::Int,year::Int,per::Int)
 
 end
 
+function Base.show(io::IO,d::Date)
+  print(io, dat2str(d))
+end
+
+function Base.print(d::Date)
+  print(dat2str(d))
+end
+
+import Base.+
+function +(d::Date,n::Integer)
+  d1 = Date(d.freq, d.per + n)
+  return d1
+end
+function +(n::Integer,d::Date)
+  d1 = d + n
+  return d1
+end
+
+import Base.-
+function -(d::Date,n::Integer)
+  d1 = Date(d.freq, d.per - n)
+  return d1
+end
+function -(d1::Date,d2::Date)
+  if d1.freq != d2.freq
+    error("Frequencies must be equal")
+  else
+    d = d1.per - d2.per
+    return d
+  end
+end
+function -(rng::OrdinalRange{Date},d::Date)
+  return (rng.start-d) : rng.step : (rng.stop-d)
+end
+
+function ==(d1::Date,d2::Date)
+  if d1.freq != d2.freq
+    error("Frequencies must be equal")
+  else
+    y = d1.per == d2.per
+    return y
+  end
+end
+
+function Base.isless(d1::Date,d2::Date)
+  if d1.freq != d2.freq
+    error("Frequencies must be equal")
+  else
+    y = d1.per < d2.per
+    return y
+  end
+end
+
+# Exported functions
+
 function yy(year::Int)
   return Date(1,year)
 end
@@ -85,58 +140,3 @@ end
 function dat2str(rng::StepRange{Date,Int})
   return dat2str.(collect(rng))
 end
-
-function Base.show(io::IO,d::Date)
-  print(io, dat2str(d))
-end
-
-function Base.print(d::Date)
-  print(dat2str(d))
-end
-
-import Base.+
-function +(d::Date,n::Integer)
-  d1 = Date(d.freq, d.per + n)
-  return d1
-end
-function +(n::Integer,d::Date)
-  d1 = d + n
-  return d1
-end
-
-import Base.-
-function -(d::Date,n::Integer)
-  d1 = Date(d.freq, d.per - n)
-  return d1
-end
-function -(d1::Date,d2::Date)
-  if d1.freq != d2.freq
-    error("Frequencies must be equal")
-  else
-    d = d1.per - d2.per
-    return d
-  end
-end
-function -(rng::OrdinalRange{Date},d::Date)
-  return (rng.start-d) : rng.step : (rng.stop-d)
-end
-
-import Base.==
-function ==(d1::Date,d2::Date)
-  if d1.freq != d2.freq
-    error("Frequencies must be equal")
-  else
-    y = d1.per == d2.per
-    return y
-  end
-end
-
-function Base.isless(d1::Date,d2::Date)
-  if d1.freq != d2.freq
-    error("Frequencies must be equal")
-  else
-    y = d1.per < d2.per
-    return y
-  end
-end
-

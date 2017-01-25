@@ -37,8 +37,8 @@ function SolveModel(m::ParsedModel,db_init::DataBase,db_targ::DataBase,rng)
       rng - db_targ.firstdate + 1,
       db_targ.firstdate,
       rng,
-      1e-12,
-      1000,
+      1e-9,
+      100,
       "none",
       NaN,
       0,
@@ -52,6 +52,56 @@ end
 function SolveModel(m::ParsedModel,db::DataBase,rng)
   return SolveModel(m, db, db, rng)
 end
+
+function ==(m1::SolveModel,m2::SolveModel)
+
+  y = true
+  fns = fieldnames(m1)
+  for fn in fns
+    y = y && getfield(m1,fn) == getfield(m2,fn)
+  end
+  return y
+  
+end
+
+function Base.show(io::IO,m::SolveModel)
+
+  w = 20
+
+  print(io,"\n")
+
+  print(io,lpad("Model: ",w," "))
+  print(io,"$(length(m.mod.eqs)) equation(s), $(length(m.mod.paramnames)) parameter(s), $(length(m.mod.exognames)) exogenous variable(s)\n")
+
+  print(io,lpad("Database: ",w," "))
+  print(io,"first date: $(m.firstdate), last date: $(m.firstdate + size(m.db_targ,1) - 1), number of variables: $(size(m.db_targ,2))\n")
+
+  print(io,lpad("Solution range: ",w," "))
+  print(io,"$(m.daterange) ($(length(m.daterange)) periods)\n")
+
+  print(io,lpad("Last solved: ",w," "))
+  print(io,"$(m.time)\n")
+
+  print(io,lpad("Max norm of resid: ",w," "))
+  print(io,"$(m.resnorm)\n")
+
+  print(io,lpad("Iterations: ",w," "))
+  print(io,"$(m.iter)\n")
+
+  print(io,lpad("Tolerance: ",w," "))
+  print(io,"$(m.tolerance)\n")
+
+  print(io,lpad("Maxiter: ",w," "))
+  print(io,"$(m.maxiter)\n")
+
+end
+
+function Base.print(m::SolveModel)
+
+  print(m.mod)
+
+end
+
 
 function get_endog_ind(m::ParsedModel)
   
@@ -171,9 +221,6 @@ function eval_derivatives(m::SolveModel)
   
   for i = 1:length(vals)
     vals[i] = m.stacked_jac_fun[i](m.db_targ,times[i])
-    if i in [5 11]
-      # println(m.stacked_jac_expr[i])
-    end
   end
   
   nT = m.mod.nvars*length(m.range)
@@ -211,6 +258,13 @@ function jacobian(m::SolveModel,x)
 
 end
 
+function jacobian(m::SolveModel)
+
+  Jac = eval_derivatives(m)
+  return Jac
+
+end
+
 function solve!(m::SolveModel)
 
   x       = get_x_from_db(m)
@@ -225,6 +279,7 @@ function solve!(m::SolveModel)
   while m.tolerance <= resnorm && iter <= m.maxiter
 
     Jac     = jacobian(m,x);
+    # display(full(Jac))
     x       = x - Jac\res;
     res     = residual(m,x);
     resnorm = maxabs(res);
@@ -367,81 +422,26 @@ function shock!(m::SolveModel,varname::String,daterange::OrdinalRange{Date},vals
 
 end
 
-function shock!(m::SolveModel,varname::String,date::Date,val::Number)
+function shock!(m::SolveModel,varname::String,ind,val)
 
   varind = findin(m.mod.allnames,[varname])[1]
-  timeind = date - m.firstdate + 1
+  timeind = ind - m.firstdate + 1
   m.db_targ[timeind,varind] = val
   
   return m
 
 end
 
-function get_result(m::SolveModel)
+function get_result(m::SolveModel,ifall = false)
 
   db_targ   = DataBase(m.db_targ,   m.mod.allnames, m.firstdate)
   db_resid  = DataBase(m.db_resid,  m.mod.eqlabs,   m.firstdate)
   
-  db_targ   = db_targ[m.daterange]
-  db_resid  = db_resid[m.daterange]
+  if !ifall
+    db_targ   = db_targ[m.daterange]
+    db_resid  = db_resid[m.daterange]
+  end
   
   return db_targ, db_resid
-
-end
-
-function Base.show(io::IO,m::SolveModel)
-
-  w = 20
-
-  print(io,"\n")
-
-  print(io,lpad("Model: ",w," "))
-  print(io,length(m.mod.eqs))
-  print(io," equation(s), ")
-  print(io,length(m.mod.paramnames))
-  print(io," parameter(s), ")
-  print(io,length(m.mod.exognames))
-  print(io," exogenous variable(s)  ")
-  print(io,"\n")
-
-  print(io,lpad("Database: ",w," "))
-  print(io,"first date: ")
-  print(io,m.firstdate  )
-  print(io,", number of variables: ")
-  print(io,size(m.db_targ,2))
-  print(io,"\n")
-
-  print(io,lpad("Solution range: ",w," "))
-  print(io,m.daterange)
-  print(io," (")
-  print(io,length(m.daterange))
-  print(io," periods)")
-  print(io,"\n")
-
-  print(io,lpad("Last solved: ",w," "))
-  print(io,m.time)
-  print(io,"\n")
-
-  print(io,lpad("Max norm of resid: ",w," "))
-  print(io,m.resnorm)
-  print(io,"\n")
-
-  print(io,lpad("Iterations: ",w," "))
-  print(io,m.iter)
-  print(io,"\n")
-
-  print(io,lpad("Tolerance: ",w," "))
-  print(io,m.tolerance)
-  print(io,"\n")
-
-  print(io,lpad("Maxiter: ",w," "))
-  print(io,m.maxiter)
-  print(io,"\n")
-
-end
-
-function Base.print(m::SolveModel)
-
-  print(m.mod)
 
 end

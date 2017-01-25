@@ -14,6 +14,10 @@ function TimeSeries(rng::Date,v::Number)
   return TimeSeries(rng,[v])
 end
 
+function ==(ts1::TimeSeries,ts2::TimeSeries)
+  return ts1.firstdate == ts2.firstdate && ts1.values == ts2.values
+end
+
 function Base.show(io::IO,ts::TimeSeries)
 
   if isreal(ts)
@@ -291,20 +295,6 @@ function Base.diff(ts::TimeSeries)
   dts = TimeSeries(ts.firstdate,[NaN;diff(ts.values)])
 end
 
-function pct(ts::TimeSeries)
-  freq      = ts.firstdate.freq;
-  pchvalues = [NaN; 100*ts.values[2:end]./ts.values[1:end-1]]
-  pchts     = TimeSeries(ts.firstdate,pchvalues)
-  return pchts
-end
-
-function apct(ts::TimeSeries)
-  freq      = ts.firstdate.freq;
-  pchvalues = [repmat([NaN],freq); 100*ts.values[freq+1:end]./ts.values[1:end-freq]]
-  pchts     = TimeSeries(ts.firstdate,pchvalues)
-  return pchts
-end
-
 function Base.cumsum(ts::TimeSeries,x...)
   return TimeSeries(ts.firstdate,cumsum(ts.values,x...))
 end
@@ -389,6 +379,64 @@ function Base.filt(a,b,ts::TimeSeries,init...)
   return TimeSeries(ts.firstdate, filt(a,b,ts.values,init...))
 end
 
+function Base.length(ts::TimeSeries)
+  return length(ts.values)
+end
+
+function Base.start(ts::TimeSeries)
+  return start(ts.values)
+end
+
+function Base.next(ts::TimeSeries,n::Int)
+  return next(ts.values,n)
+end
+
+function Base.done(ts::TimeSeries,n::Int)
+  return done(ts.values,n)
+end
+
+function Base.range(ts::TimeSeries)
+  return range(ts.firstdate, length(ts.values))
+end
+
+function Plots.plot(ts::TimeSeries)
+
+  fy, fp, freq = ypf(ts.firstdate)
+
+  if length(ts) > 12
+    # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
+    if fp == 1
+      fxtick = 1
+    else
+      fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
+    end
+    step = freq
+    xticks = fxtick:step:length(ts)
+  else
+    xticks = 1:length(ts) # Use all ticks for short series
+  end
+  xticklabels = dat2str(range(ts)[xticks])
+
+  plot(ts.values, xticks=(xticks, xticklabels), legend = false)
+
+end
+
+# Exported functions
+
+function pct(ts::TimeSeries)
+  freq      = ts.firstdate.freq;
+  pchvalues = [NaN; 100*ts.values[2:end]./ts.values[1:end-1]]
+  pchts     = TimeSeries(ts.firstdate,pchvalues)
+  return pchts
+end
+
+function apct(ts::TimeSeries)
+  freq      = ts.firstdate.freq;
+  pchvalues = [repmat([NaN],freq); 100*ts.values[freq+1:end]./ts.values[1:end-freq]]
+  pchts     = TimeSeries(ts.firstdate,pchvalues)
+  return pchts
+end
+
 function hpf(ts::TimeSeries,lambda...)
 
   if length(lambda) == 0
@@ -440,47 +488,5 @@ function justify!(ts1::TimeSeries,ts2::TimeSeries)
 
   extend!(ts1,rng)
   extend!(ts2,rng)
-
-end
-
-function Base.length(ts::TimeSeries)
-  return length(ts.values)
-end
-
-function Base.start(ts::TimeSeries)
-  return start(ts.values)
-end
-
-function Base.next(ts::TimeSeries,n::Int)
-  return next(ts.values,n)
-end
-
-function Base.done(ts::TimeSeries,n::Int)
-  return done(ts.values,n)
-end
-
-function Base.range(ts::TimeSeries)
-  return range(ts.firstdate, length(ts.values))
-end
-
-function Plots.plot(ts::TimeSeries)
-
-  fy, fp, freq = ypf(ts.firstdate)
-
-  if length(ts) > 12
-    # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
-    if fp == 1
-      fxtick = 1
-    else
-      fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
-    end
-    step = freq
-    xticks = fxtick:step:length(ts)
-  else
-    xticks = 1:length(ts) # Use all ticks for short series
-  end
-  xticklabels = dat2str(range(ts)[xticks])
-
-  plot(ts.values, xticks=(xticks, xticklabels), legend = false)
 
 end

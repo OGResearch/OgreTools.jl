@@ -25,6 +25,17 @@ function DataBase(array::Array,varnames::Array{String,1},fd::Date)
   
 end
 
+function ==(db1::DataBase,db2::DataBase)
+
+  y = 
+    db1.firstdate == db2.firstdate &&
+    db1.lastdate == db2.lastdate &&
+    db1.data == db2.data
+    
+  return y
+
+end
+
 function Base.show(io::IO,db::DataBase)
   
   vnames = keys(db)
@@ -110,22 +121,30 @@ function Base.print(db::DataBase,threshold)
     end
   end
   
-  # Inf is a Float, need to convert to Int
-  fd = convert(Int,fd)
-  ld = convert(Int,ld)
+  if !isinf(fd) && !isinf(ld) # There are values large than the threshold
   
-  db1 = DataBase(db.firstdate + fd - 1 : db.firstdate + ld - 1) 
-  
-  for name in keys(db)
-    ind = abs(db[name]) > threshold
-    if any(ind)
-      db1[name] = db[name][ind]
-    else
-      db1[name] = NaN
+    # Inf is a Float, and hence so will be fd/ld, need to convert to Int
+    fd = convert(Int,fd)
+    ld = convert(Int,ld)
+    
+    db1 = DataBase(db.firstdate + fd - 1 : db.firstdate + ld - 1) 
+    
+    for name in keys(db)
+      ind = abs(db[name]) > threshold
+      if any(ind)
+        db1[name] = db[name][ind]
+      else
+        db1[name] = NaN
+      end
     end
-  end
+    
+    print(db1)
   
-  print(db1)
+  else # All values are smaller than the threshold
+  
+    print("All values in the database are less than $threshold in absolute value\n")
+  
+  end
   
 end
 
@@ -181,64 +200,6 @@ function Base.values(db::DataBase)
   return values(db.data)
 end
 
-function justify!(db::DataBase)
-
-  # # Need to predefine, since loops are "local"
-  # fd = Date(db.firstdate.freq,1)
-  # ld = Date(db.firstdate.freq,1)
-  
-  # iffirst = true # Maybe try with enumerate?
-  # for ts in values(db.data)
-    # if iffirst
-      # fd = ts.firstdate
-      # ld = ts.firstdate + length(ts) - 1
-      # iffirst = false
-    # else
-      # fd = min(fd,ts.firstdate)
-      # ld = max(ld,ts.firstdate + length(ts) - 1)
-    # end
-  # end
-  
-  # rng = fd:ld
-  
-  for name in keys(db)
-    extend!(db.data[name],db.firstdate:db.lastdate)
-  end
-  
-end
-
-function db2array(db::DataBase)
-
-  varnames = keys(db)
-  array = []
- 
-  for (i,varname) in enumerate(varnames)
-    if i == 1
-      N = length(varnames)
-      T = length(db[varname])
-      array = Array{Number,2}(T,N)
-    end
-    array[:,i] = db[varname].values
-  end
-  
-  return array
-  
-end
-
-function db2array(db::DataBase,varnames::Array{String,1})  
-
-  T = length(db[varnames[1]])
-  array = Array{Number,2}(T,length(varnames))
-  j = 0
-  for name in varnames
-    j = j+1
-    array[:,j] = db[name].values
-  end
-  
-  return array
-
-end
-
 function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
 
   varnames  = collect(keys(db))
@@ -246,7 +207,7 @@ function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no dat
   
   data = db2array(db, varnames)
   
-  plot(data, layout = nvars, legend = false, title = varnames')
+  plot(data, layout = nvars, legend = false, title = reshape(varnames,1,nvars))
  
 end
 
@@ -399,5 +360,65 @@ function /(db1::DataBase, db2::DataBase)
   end
   
   return db
+
+end
+
+# Exported functions
+
+function justify!(db::DataBase)
+
+  # # Need to predefine, since loops are "local"
+  # fd = Date(db.firstdate.freq,1)
+  # ld = Date(db.firstdate.freq,1)
+  
+  # iffirst = true # Maybe try with enumerate?
+  # for ts in values(db.data)
+    # if iffirst
+      # fd = ts.firstdate
+      # ld = ts.firstdate + length(ts) - 1
+      # iffirst = false
+    # else
+      # fd = min(fd,ts.firstdate)
+      # ld = max(ld,ts.firstdate + length(ts) - 1)
+    # end
+  # end
+  
+  # rng = fd:ld
+  
+  for name in keys(db)
+    extend!(db.data[name],db.firstdate:db.lastdate)
+  end
+  
+end
+
+function db2array(db::DataBase)
+
+  varnames = keys(db)
+  array = []
+ 
+  for (i,varname) in enumerate(varnames)
+    if i == 1
+      N = length(varnames)
+      T = length(db[varname])
+      array = Array{Number,2}(T,N)
+    end
+    array[:,i] = db[varname].values
+  end
+  
+  return array
+  
+end
+
+function db2array(db::DataBase,varnames::Array{String,1})  
+
+  T = length(db[varnames[1]])
+  array = Array{Number,2}(T,length(varnames))
+  j = 0
+  for name in varnames
+    j = j+1
+    array[:,j] = db[name].values
+  end
+  
+  return array
 
 end
