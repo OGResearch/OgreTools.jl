@@ -153,7 +153,7 @@ function Base.setindex!(db::DataBase,ts::TimeSeries,inds::String)
   if ts.firstdate.freq != db.firstdate.freq  
     error("Frequencies must be equal")
   else  
-    db.data[inds] = ts
+    db.data[inds] = deepcopy(ts)
     db.firstdate  = min(db.firstdate,ts.firstdate)
     db.lastdate   = max(db.lastdate, ts.firstdate+length(ts)-1)
   end
@@ -200,14 +200,37 @@ function Base.values(db::DataBase)
   return values(db.data)
 end
 
-function Plots.plot(db::DataBase) # Plots the time series as arrays, i.e. no date info on x axis; currentyl only to plot IRF-s
+function Plots.plot(db::DataBase, step = [])
 
   varnames  = collect(keys(db))
-  nvars     = length(varnames)
+  data      = db2array(db, varnames)
+  T,nvars   = size(data)
   
-  data = db2array(db, varnames)
+  fy, fp, freq = ypf(db.firstdate)
+
+  if T > 12
+    # Use the first period of the first full year as the first xtick (assuming that the series is long enough)
+    if fp == 1
+      fxtick = 1
+    else
+      fxtick = Date(freq, fy+1, 1) - db.firstdate + 1
+    end
+    if length(step) == 0
+      step = freq
+    end
+    xticks = fxtick:step:T
+  else
+    xticks = 1:T # Use all ticks for short series
+  end
+  xticklabels = dat2str((db.firstdate:db.lastdate)[xticks])
   
-  plot(data, layout = nvars, legend = false, title = reshape(varnames,1,nvars))
+  plot(
+    data,
+    layout = nvars,
+    xticks = (xticks,xticklabels),
+    legend = false, 
+    title = reshape(varnames,1,nvars)
+  )
  
 end
 
@@ -443,4 +466,9 @@ function calc_irf(db_shock::DataBase, db_contr::DataBase, varlist_mult::Array{St
   
   return irf 
 
+end
+
+import Base.maxabs
+function maxabs(db::DataBase)
+  return maxabs(db2array(db))
 end

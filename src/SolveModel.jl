@@ -285,8 +285,8 @@ function solve!(m::SolveModel)
 
     step = -Jac\res
     
-    dump_factor = 1
-    dump_iter   = 0
+    damp_factor = 1
+    damp_iter   = 0
     
     x_is_not_ok = true
     while x_is_not_ok
@@ -299,9 +299,9 @@ function solve!(m::SolveModel)
         x   = x_cand
         x_is_not_ok = false
       catch
-        dump_iter   = dump_iter + 1
-        dump_factor = dump_factor/2
-        step = dump_factor*step
+        damp_iter   = damp_iter + 1
+        damp_factor = damp_factor/2
+        step = damp_factor*step
         if maxabs(step) < eps()
           error("Can not move from the current iteration to a feasible point")
         end
@@ -312,10 +312,10 @@ function solve!(m::SolveModel)
     resnorm = maxabs(res)
 
     if m.display == "iter"
-      if dump_iter == 0
+      if damp_iter == 0
         @printf "Iteration: %4.0f, resnorm: %12.4e\n" iter resnorm
       else
-        @printf "Iteration: %4.0f, resnorm: %12.4e, dumping iterations: %2.0f\n" iter resnorm dump_iter
+        @printf "Iteration: %4.0f, resnorm: %12.4e, damping iterations: %2.0f\n" iter resnorm damp_iter
       end
     end
 

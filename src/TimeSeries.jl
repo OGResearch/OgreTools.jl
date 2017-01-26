@@ -399,7 +399,7 @@ function Base.range(ts::TimeSeries)
   return range(ts.firstdate, length(ts.values))
 end
 
-function Plots.plot(ts::TimeSeries)
+function Plots.plot(ts::TimeSeries, step = [])
 
   fy, fp, freq = ypf(ts.firstdate)
 
@@ -410,7 +410,9 @@ function Plots.plot(ts::TimeSeries)
     else
       fxtick = Date(freq, fy+1, 1) - ts.firstdate + 1
     end
-    step = freq
+    if length(step) == 0
+      step = freq
+    end
     xticks = fxtick:step:length(ts)
   else
     xticks = 1:length(ts) # Use all ticks for short series
