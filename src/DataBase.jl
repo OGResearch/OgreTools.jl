@@ -422,3 +422,25 @@ function db2array(db::DataBase,varnames::Array{String,1})
   return array
 
 end
+
+import Base.merge
+function merge(db1::DataBase, db2::DataBase)
+
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.firstdate, db2.lastdate)
+  data = merge(db1.data, db2.data)
+  db = DataBase(fd,ld,data)
+  
+  return db
+
+end
+
+function calc_irf(db_shock::DataBase, db_contr::DataBase, varlist_mult::Array{String,1}, varlist_add::Array{String,1} = Array{String,1}(0))
+  
+  irf_mult = 100*(db_shock[varlist_mult]/db_contr[varlist_mult] - 1)
+  irf_add  = db_shock[varlist_add] - db_contr[varlist_add]
+  irf = merge(irf_mult, irf_add)
+  
+  return irf 
+
+end

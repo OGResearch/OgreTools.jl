@@ -26,7 +26,8 @@ export TimeSeries,
 
 # include definition and methods of the DataBase type
 include("DataBase.jl")
-export DataBase, justify!, db2array
+export DataBase, justify!, db2array,
+       calc_irf
 
 # include definition and methods of the SolveModel type
 include("SolveModel.jl")
@@ -37,6 +38,6 @@ export SolveModel, solve!,
        dac!, homotopy!,
        put_x_to_db!, get_x_from_db,
        endogenize!, exogenize!,
-       shock!, get_result
+       shock!, get_result, check_model
 
 end # module

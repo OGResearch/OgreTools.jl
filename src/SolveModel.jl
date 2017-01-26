@@ -39,7 +39,7 @@ function SolveModel(m::ParsedModel,db_init::DataBase,db_targ::DataBase,rng)
       rng,
       1e-9,
       100,
-      "none",
+      "iter",
       NaN,
       0,
       DateTime()
@@ -187,8 +187,8 @@ function get_stacked_jac(m::ParsedModel, rng)
         push!(exprs,  tjac_exprs[k])
         push!(times,t)
       end
-      append!(ro, tjac_ind[:,1] + (t - rng[1])*m.nvars);
-      append!(co, tjac_ind[:,2] + (t - rng[1])*m.nvars + l*m.nvars);
+      append!(ro, tjac_ind[:,1] + (t - rng[1])*m.nvars)
+      append!(co, tjac_ind[:,2] + (t - rng[1])*m.nvars + l*m.nvars)
     end
 
   end
@@ -267,10 +267,15 @@ end
 
 function solve!(m::SolveModel)
 
+  check_model(m)
+
   x       = get_x_from_db(m)
-  res     = residual(m,x);
-  resnorm = maxabs(res);
-  iter    = 1;
+  res     = residual(m,x)
+  resnorm = maxabs(res)
+  if m.tolerance <= resnorm # Evaluate Jacobian at the starting value only if necessary
+    Jac   = jacobian(m,x)
+  end
+  iter    = 1
 
   if m.display == "iter"
     @printf "Starting solver\n"
@@ -278,17 +283,43 @@ function solve!(m::SolveModel)
 
   while m.tolerance <= resnorm && iter <= m.maxiter
 
-    Jac     = jacobian(m,x);
-    # display(full(Jac))
-    x       = x - Jac\res;
-    res     = residual(m,x);
-    resnorm = maxabs(res);
+    step = -Jac\res
+    
+    dump_factor = 1
+    dump_iter   = 0
+    
+    x_is_not_ok = true
+    while x_is_not_ok
+    
+      x_cand  = x + step
+      
+      try
+        res = residual(m,x_cand)
+        Jac = jacobian(m,x_cand)
+        x   = x_cand
+        x_is_not_ok = false
+      catch
+        dump_iter   = dump_iter + 1
+        dump_factor = dump_factor/2
+        step = dump_factor*step
+        if maxabs(step) < eps()
+          error("Can not move from the current iteration to a feasible point")
+        end
+      end
+      
+    end
+    
+    resnorm = maxabs(res)
 
     if m.display == "iter"
-      @printf "Iteration: %4.0f, resnorm: %12.4e\n" iter resnorm
+      if dump_iter == 0
+        @printf "Iteration: %4.0f, resnorm: %12.4e\n" iter resnorm
+      else
+        @printf "Iteration: %4.0f, resnorm: %12.4e, dumping iterations: %2.0f\n" iter resnorm dump_iter
+      end
     end
 
-    iter = iter + 1;
+    iter = iter + 1
 
   end
 
@@ -302,7 +333,7 @@ function solve!(m::SolveModel)
     @printf "Iteration: %4.0f, resnorm: %12.4e\n" iter resnorm
   end
 
-  put_x_to_db!(m,x);
+  put_x_to_db!(m,x)
   m.iter = iter
   m.resnorm = resnorm
   m.time = now()
@@ -317,10 +348,10 @@ end
 function homotopy!(m::SolveModel,nstep)
 
   db_difi = m.db_targ - m.db_init
+  
+  @printf "Starting homotpy with %4.0f steps\n" nstep
 
   for i = 1:nstep
-
-    # @printf "Initial value %12.8e\n" m.db_init[10,1]
 
     if 1 < i
       m.db_init = m.db_targ
@@ -330,19 +361,19 @@ function homotopy!(m::SolveModel,nstep)
 
     @printf "Homotopy step %4.0f, iteration: %4.0f, resnorm: %12.4e\n" i m.iter m.resnorm
 
-    # @printf "Final value   %12.8e\n" m.db_targ[10,1]
-
   end
+  
+  @printf "Homotopy finished"
 
 end
 
 function put_x_to_db!(m::SolveModel,x)
 
-  i = 0;
+  i = 0
   for t = m.range
     for j = 1:m.mod.nvars
-      i = i+1;
-      m.db_targ[t,m.endog_ind[j]] = x[i];
+      i = i+1
+      m.db_targ[t,m.endog_ind[j]] = x[i]
     end
   end
 
@@ -412,25 +443,31 @@ function exogenize!(m::SolveModel,varname::String)
   exogenize!(m, [varname])
 end
 
-function shock!(m::SolveModel,varname::String,daterange::OrdinalRange{Date},vals::Array{Number,1})
+# function shock!(m::SolveModel,varname::String,daterange::OrdinalRange{Date},vals::Array{Number,1},transf = "none")
 
-  varind = findin(m.mod.allnames,[varname])[1]
+function shock!(m::SolveModel,varname::String,daterange,vals,transf = "none")
+
+  varind    = findin(m.mod.allnames,[varname])[1]
   timerange = daterange - m.firstdate + 1
-  m.db_targ[timerange,varind] = vals
+  origvals  = m.db_targ[timerange,varind]
+  
+  if      transf == "none"
+    shockvals = vals
+  elseif  transf == "mult"
+    shockvals = origvals .* vals
+  elseif  transf == "add"
+    shockvals = origvals + vals
+  end
+  
+  m.db_targ[timerange,varind] = shockvals
   
   return m
 
 end
 
-function shock!(m::SolveModel,varname::String,ind,val)
-
-  varind = findin(m.mod.allnames,[varname])[1]
-  timeind = ind - m.firstdate + 1
-  m.db_targ[timeind,varind] = val
-  
-  return m
-
-end
+# function shock!(m::SolveModel,varname::String,d::Date,vals::Number,transf = "none")
+  # shock!(m,varname,d:d,[vals],transf)
+# end
 
 function get_result(m::SolveModel,ifall = false)
 
@@ -444,4 +481,15 @@ function get_result(m::SolveModel,ifall = false)
   
   return db_targ, db_resid
 
+end
+
+function check_model(m::SolveModel)
+
+  y = true
+  
+  y = y && m.mod.nvars == length(m.mod.eqs)
+  if !y
+    error("The number of endogenous variables ($(m.mod.nvars)) is different from the number of equations ($(length(m.mod.eqs)))")
+  end
+  
 end
