@@ -2,9 +2,9 @@
 
 Linux: [![Build Status](https://travis-ci.org/OGResearch/OgreTools.jl.svg?branch=master)](https://travis-ci.org/OGResearch/OgreTools.jl)
 
-Windows: [![Build status](https://ci.appveyor.com/api/projects/status/nvnlxyjhco48cjfs/branch/master?svg=true)](https://ci.appveyor.com/project/nul0m/ogretools-jl/branch/master)
+Windows: [![Build status](https://ci.appveyor.com/api/projects/status/2lvl209gtd0mw184?svg=true)](https://ci.appveyor.com/project/OGR/ogretools-jl)
 
-Code coverage: [![Coverage Status](https://coveralls.io/repos/github/nul0m/OgreTools.jl/badge.svg?branch=master)](https://coveralls.io/github/nul0m/OgreTools.jl?branch=master)
+Code coverage: [![Coverage Status](https://coveralls.io/repos/github/OGResearch/OgreTools.jl/badge.svg?branch=master)](https://coveralls.io/github/OGResearch/OgreTools.jl?branch=master)
 
 ## OgreTools
 
