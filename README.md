@@ -17,7 +17,7 @@ _Currently, it is not an official Julia package and supports only the latest sta
 If you have Internet connection on your machine it is enough to execute the following Julia commands to install the package:
 
 ```jl
-    Pkg.clone("https://github.com/nul0m/OgreTools.jl.git")
+    Pkg.clone("https://github.com/OGResearch/OgreTools.jl.git")
     Pkg.build("OgreTools")
 ```
 
