@@ -419,7 +419,16 @@ function Plots.plot(ts::TimeSeries, step = [])
   end
   xticklabels = dat2str(range(ts)[xticks])
 
-  plot(ts.values, xticks=(xticks, xticklabels), legend = false)
+  plot(
+    ts.values,
+    xticks    =(xticks, xticklabels),
+    legend    = false,
+    size      = (600,400),
+    titlefont = font(12),
+    tickfont  = font(10),
+    margin    = 5Plots.mm,
+    show      = true
+  )
 
 end
 

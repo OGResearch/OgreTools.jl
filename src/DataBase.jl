@@ -200,7 +200,7 @@ function Base.values(db::DataBase)
   return values(db.data)
 end
 
-function Plots.plot(db::DataBase, step = [])
+function Plots.plot(db::DataBase, step = [], nplots = 12)
 
   varnames  = collect(keys(db))
   data      = db2array(db, varnames)
@@ -223,14 +223,42 @@ function Plots.plot(db::DataBase, step = [])
     xticks = 1:T # Use all ticks for short series
   end
   xticklabels = dat2str((db.firstdate:db.lastdate)[xticks])
+
+  nplots = min(nplots, nvars)
   
-  plot(
-    data,
-    layout = nvars,
-    xticks = (xticks,xticklabels),
-    legend = false, 
-    title = reshape(varnames,1,nvars)
-  )
+  fc = 1
+  while fc <= nvars
+  
+    lc = min(fc+nplots-1, nvars)
+    
+    lyt = lc - fc + 1
+    
+    if lyt == 1
+      siz = (600,400)
+    elseif lyt == 2
+      siz = (1200,400)
+    elseif lyt in [3 4]
+      siz = (1200,800)
+    else
+      siz = (1600,900)
+    end
+  
+    plot(
+      data[:,fc:lc],
+      layout    = lyt,
+      xticks    = (xticks,xticklabels),
+      legend    = false, 
+      title     = reshape(varnames,1,nvars),
+      size      = siz,
+      titlefont = font(12),
+      tickfont  = font(10),
+      margin    = 5Plots.mm,
+      show      = true
+    )
+    
+    fc = lc+1
+    
+  end
  
 end
 
@@ -386,6 +414,23 @@ function /(db1::DataBase, db2::DataBase)
 
 end
 
+import Base.merge
+function merge(db1::DataBase, db2::DataBase)
+
+  fd = min(db1.firstdate, db2.firstdate)
+  ld = max(db1.lastdate,  db2.lastdate)
+  data = merge(db1.data, db2.data)
+  db = DataBase(fd,ld,data)
+  
+  return db
+
+end
+
+import Base.maxabs
+function maxabs(db::DataBase)
+  return maxabs(db2array(db))
+end
+
 # Exported functions
 
 function justify!(db::DataBase)
@@ -446,18 +491,6 @@ function db2array(db::DataBase,varnames::Array{String,1})
 
 end
 
-import Base.merge
-function merge(db1::DataBase, db2::DataBase)
-
-  fd = min(db1.firstdate, db2.firstdate)
-  ld = max(db1.firstdate, db2.lastdate)
-  data = merge(db1.data, db2.data)
-  db = DataBase(fd,ld,data)
-  
-  return db
-
-end
-
 function calc_irf(db_shock::DataBase, db_contr::DataBase, varlist_mult::Array{String,1}, varlist_add::Array{String,1} = Array{String,1}(0))
   
   irf_mult = 100*(db_shock[varlist_mult]/db_contr[varlist_mult] - 1)
@@ -466,9 +499,4 @@ function calc_irf(db_shock::DataBase, db_contr::DataBase, varlist_mult::Array{St
   
   return irf 
 
-end
-
-import Base.maxabs
-function maxabs(db::DataBase)
-  return maxabs(db2array(db))
 end
