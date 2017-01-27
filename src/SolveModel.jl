@@ -268,6 +268,10 @@ end
 function solve!(m::SolveModel)
 
   check_model(m)
+  
+  if m.display == "iter"
+    @printf "Starting solver\n"
+  end
 
   x       = get_x_from_db(m)
   res     = residual(m,x)
@@ -276,10 +280,6 @@ function solve!(m::SolveModel)
     Jac   = jacobian(m,x)
   end
   iter    = 1
-
-  if m.display == "iter"
-    @printf "Starting solver\n"
-  end
 
   while m.tolerance <= resnorm && iter <= m.maxiter
 
@@ -296,7 +296,7 @@ function solve!(m::SolveModel)
       try
         res = residual(m,x_cand)
         Jac = jacobian(m,x_cand)
-        x   = x_cand
+        x   = x_cand # We get this far only if the residual/Jacobian could have been evaluated
         x_is_not_ok = false
       catch
         damp_iter   = damp_iter + 1
