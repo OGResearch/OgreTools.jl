@@ -1,6 +1,6 @@
 # OgreTools
 
-Linux: [![Build Status](https://travis-ci.org/nul0m/OgreTools.jl.svg?branch=master)](https://travis-ci.org/nul0m/OgreTools.jl)
+Linux: [![Build Status](https://travis-ci.org/OGResearch/OgreTools.jl.svg?branch=master)](https://travis-ci.org/OGResearch/OgreTools.jl)
 
 Windows: [![Build status](https://ci.appveyor.com/api/projects/status/nvnlxyjhco48cjfs/branch/master?svg=true)](https://ci.appveyor.com/project/nul0m/ogretools-jl/branch/master)
 
