@@ -38,6 +38,7 @@ export SolveModel, solve!,
        dac!, homotopy!,
        put_x_to_db!, get_x_from_db,
        endogenize!, exogenize!,
-       shock!, get_result, check_model
+       shock!, get_result, check_model,
+       check_resid
 
 end # module
