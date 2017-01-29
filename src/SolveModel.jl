@@ -276,10 +276,15 @@ function solve!(m::SolveModel)
   x       = get_x_from_db(m)
   res     = residual(m,x)
   resnorm = maxabs(res)
+  iter    = 0
+  
+  if m.display == "iter"
+    @printf "Iteration: %4.0f, resnorm: %12.4e\n" iter resnorm
+  end
+  
   if m.tolerance <= resnorm # Evaluate Jacobian at the starting value only if necessary
     Jac   = jacobian(m,x)
   end
-  iter    = 1
 
   while m.tolerance <= resnorm && iter <= m.maxiter
 
@@ -310,6 +315,7 @@ function solve!(m::SolveModel)
     end
     
     resnorm = maxabs(res)
+    iter    = iter + 1
 
     if m.display == "iter"
       if damp_iter == 0
@@ -319,11 +325,7 @@ function solve!(m::SolveModel)
       end
     end
 
-    iter = iter + 1
-
   end
-
-  iter = iter - 1
 
   if m.display == "iter" || m.display == "final"
     @printf "Solver finished\n"
@@ -492,4 +494,25 @@ function check_model(m::SolveModel)
     error("The number of endogenous variables ($(m.mod.nvars)) is different from the number of equations ($(length(m.mod.eqs)))")
   end
   
+end
+
+function check_resid(m::SolveModel, threshold)
+
+  rr, cc  = findn(abs(m.db_resid[m.range,:]) .>= threshold)
+  cu      = unique(cc)
+  
+  if length(cu) == 0
+    @printf "%s" "There are no residuals larger than $threshold\n"
+  else
+  
+    @printf "%s" "There are residuals larger than $threshold in the following equations/periods:\n"
+    @printf "%25s %25s %25s %25s %25s %25s\n" "Equation number" "Equation label" "Number of periods" "First period" "Last period" "Max resid"
+    
+    for c in cu
+      r = rr[cc .== c]
+      @printf "%25.0f %25s %25.0f %25s %25s %25.4e\n" c m.mod.eqlabs[c] length(r) m.daterange[minimum(r)] m.daterange[maximum(r)] maximum(abs(m.db_resid[r,c]))
+    end
+    
+  end
+
 end
