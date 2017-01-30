@@ -160,7 +160,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       str = dat2str(fd)
       @test str == "2017M11"
       
-    end
+    end # Date-monthly
     
     @testset "Date-quarterly" begin
   
@@ -187,7 +187,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       str = dat2str(fd)
       @test str == "2017Q4"
       
-    end
+    end # Date-quarterly
     
     @testset "Date-yearly" begin
   
@@ -214,8 +214,150 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       str = dat2str(fd)
       @test str == "2017"
       
-    end
+    end # Date-yearly
+    
+    @testset "Date-errors" begin
+    
+      dm = mm(2017,1)
+      dq = qq(2017,1)
+      dy = yy(2017)
+      
+      @test_throws ErrorException dm == dq
+      @test_throws ErrorException dq == dy
+      @test_throws ErrorException dy == dm
+      
+      @test_throws ErrorException dm < dq
+      @test_throws ErrorException dq < dy
+      @test_throws ErrorException dy < dm
+      
+      @test_throws ErrorException dm - dq
+      @test_throws ErrorException dq - dy
+      @test_throws ErrorException dy - dm
+    
+    end  # Date-errors
   
-  end
+  end # Date
+  
+  @testset "TimeSeries" begin
+  
+    fd = mm(1975,1)
+    vals = randn(10)
+    ts = TimeSeries(fd,vals)
+  
+    @testset "TimeSeries-Basic" begin
+      
+      @test isa(ts,TimeSeries)
+      @test ts.firstdate == fd
+      @test ts.values == vals
+      @test ts == deepcopy(ts)
+    
+    end # "TimeSeries-Basic"
+    
+    @testset "TimeSeries - set/get index" begin
+      
+      ind = 1
+      val = 10
+      ts[ind] = val
+      @test all(ts.values[ind] .== val)
+      ts1 = ts[ind]
+      @test ts1 == TimeSeries(fd, ts.values[ind])
+      
+      ts[end] = 20
+      @test ts.values[end] == 20
+      
+      ts[3:end-4] = 30
+      @test all(ts.values[3:6] .== 30)
+      
+      d1 = mm(1975,2)
+      d2 = mm(1975,5)
+      
+      ind = d1
+      val = 40
+      ts[ind] = val
+      @test all(ts.values[ind-fd+1] .== val)
+      ts1 = ts[ind]
+      @test ts1 == TimeSeries(ind, ts.values[ind-fd+1])
+      
+      ind = d1:d2
+      val = 50
+      ts[ind] = val
+      @test all(ts.values[ind-fd+1] .== val)
+      ts1 = ts[ind]
+      @test ts1 == TimeSeries(ind[1], ts.values[ind-fd+1])
+      
+    end # "TimeSeries - set/get index"
+    
+    @testset "TimeSeries-functions" begin
+      
+      # Basic function on [0,1]
+      funs = [
+        log,log1p,log2,log10,
+        exp,expm1,
+        abs,abs2,sqrt,cbrt,
+        sin,cos,tan,cot,
+        asin,acos,atan,acot,
+        sinh,cosh,tanh,coth,
+        asinh,atanh,
+        erf,erfc,erfinv,erfcinv,
+        gamma,lgamma,
+        real,imag,fft
+        ]
+      
+      ts = TimeSeries(fd,rand(10))
+      
+      for f in funs
+        @test f(ts).values == f(convert(Array{Real},ts.values)) # For erf(c)inv
+      end
+      
+      @test ifft(ts).values == ifft(convert(Array{Complex{Float64}}, ts.values)) # Here I couldn't find any other solution
+      
+      # Basic functions on [1,\infty]
+      funs = [acosh, acoth]
+      ts = TimeSeries(fd,1 + rand(10))
+      for f in funs
+        @test f(ts).values == f(ts.values)
+      end
+      
+      # Statistical functions
+      @test cumsum(ts).values   == cumsum(convert(Array{AbstractFloat},ts.values))
+      @test cumprod(ts).values  == cumprod(ts.values) 
+      
+      funs = [mean, median, var, std]
+      for f in funs
+        @test f(ts) == f(ts.values)
+      end
+      
+      # Function with 2 TimeSeries inputs
+      ts1 = TimeSeries(fd,rand(10)) # For beta
+      ts2 = TimeSeries(fd,rand(10)) # For beta
+ 
+      @test cov(ts1,ts2) == cov(ts1.values,ts2.values)
+      @test cor(ts1,ts2) == cor(ts1.values,ts2.values)
+      @test beta(ts1,ts2).values  == beta(ts1.values,ts2.values)
+      @test lbeta(ts1,ts2).values == lbeta(ts1.values,ts2.values)
+      
+      # Misc 1
+      funs = [length, start, endof, length, isreal]
+      for f in funs
+        @test f(ts) == f(ts.values)
+      end
+      
+      # Misc 2
+      funs = [next, done]
+      for f in funs
+        @test f(ts,1) == f(ts.values,1)
+      end
+      
+      # Misc 3
+      vals = randn(100)
+      ts = TimeSeries(fd,vals)
+      ar =  0.9
+      ma = -0.3
+      @test filt([1; ma], [1; -ar], ts).values == filt([1; ma], [1; -ar], ts.values)
+      
+      
+    end # "TimeSeries-functions"
+  
+  end # TimeSeries
 
 end # testset

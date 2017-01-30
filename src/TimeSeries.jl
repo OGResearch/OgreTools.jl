@@ -6,7 +6,7 @@ type TimeSeries
   values::Array{Number,1}
 end
 
-function TimeSeries(rng::OrdinalRange{Date},v::Number)
+function TimeSeries(rng::StepRange{Date,Int},v::Number)
   return TimeSeries(rng[1],fill(v,length(rng)))
 end
 
@@ -41,7 +41,7 @@ function Base.setindex!(ts::TimeSeries,x,inds::Date)
   extend!(ts,inds)
   ts.values[inds - ts.firstdate + 1] = x
 end
-function Base.setindex!(ts::TimeSeries,x,inds::OrdinalRange{Date})
+function Base.setindex!(ts::TimeSeries,x,inds::StepRange{Date,Int})
   extend!(ts,inds)
   ts.values[inds - ts.firstdate + 1] = x
 end
@@ -49,10 +49,10 @@ end
 function Base.getindex(ts::TimeSeries,inds)
   return TimeSeries(ts.firstdate + inds - 1, ts.values[inds])
 end
-function Base.getindex(ts::TimeSeries,inds::UnitRange)
+function Base.getindex(ts::TimeSeries,inds::UnitRange) # 1:n
   return TimeSeries(ts.firstdate + inds[1] - 1, ts.values[inds])
 end
-function Base.getindex(ts::TimeSeries,inds::OrdinalRange)
+function Base.getindex(ts::TimeSeries,inds::StepRange) # 1:1:n
   if inds.step == 1
     return TimeSeries(ts.firstdate + inds[1] - 1, ts.values[inds])
   else
@@ -62,7 +62,7 @@ end
 function Base.getindex(ts::TimeSeries,inds::Date)
   return TimeSeries(inds,ts.values[inds - ts.firstdate + 1])
 end
-function Base.getindex(ts::TimeSeries,inds::OrdinalRange{Date})
+function Base.getindex(ts::TimeSeries,inds::StepRange{Date,Int})
   if inds.step == 1
     return TimeSeries(inds[1],ts.values[inds - ts.firstdate + 1])
   else
@@ -80,10 +80,6 @@ function Base.getindex(ts::TimeSeries,inds::BitArray{1}) # For logical indexing
 
   return TimeSeries(ts.firstdate + fd - 1, vals)
 
-end
-
-function Base.endof(ts::TimeSeries)
-  return length(ts.values)
 end
 
 # function Base.convert(Array,ts::TimeSeries)
@@ -271,24 +267,52 @@ function Base.erfc(ts::TimeSeries)
   return TimeSeries(ts.firstdate,erfc(ts.values))
 end
 function Base.erfinv(ts::TimeSeries)
-  return TimeSeries(ts.firstdate,erfinv(ts.values))
+  return TimeSeries(ts.firstdate,erfinv(convert(Array{Real},ts.values)))
 end
 function Base.erfcinv(ts::TimeSeries)
-  return TimeSeries(ts.firstdate,erfcinv(ts.values))
+  return TimeSeries(ts.firstdate,erfcinv(convert(Array{Real},ts.values)))
 end
 
 function Base.gamma(ts::TimeSeries)
-  return TimeSeries(ts.firstdate,lgamma(ts.values))
+  return TimeSeries(ts.firstdate,gamma(ts.values))
 end
 function Base.lgamma(ts::TimeSeries)
-  return TimeSeries(ts.firstdate,llgamma(ts.values))
+  return TimeSeries(ts.firstdate,lgamma(ts.values))
 end
 
 function Base.beta(ts1::TimeSeries,ts2::TimeSeries)
-  return TimeSeries(ts.firstdate,beta(ts1.values,ts2.values))
+
+  if ts1.firstdate.freq != ts2.firstdate.freq
+
+    error("Frequencies must be equal")
+
+  else
+
+    ts11 = deepcopy(ts1)
+    ts21 = deepcopy(ts2)
+    justify!(ts11,ts21)
+
+    return TimeSeries(ts11.firstdate,beta(ts11.values,ts21.values))
+  
+  end
+  
 end
 function Base.lbeta(ts1::TimeSeries,ts2::TimeSeries)
-  return TimeSeries(ts.firstdate,lbeta(ts1.values,ts2.values))
+
+  if ts1.firstdate.freq != ts2.firstdate.freq
+
+    error("Frequencies must be equal")
+
+  else
+
+    ts11 = deepcopy(ts1)
+    ts21 = deepcopy(ts2)
+    justify!(ts11,ts21)
+
+    return TimeSeries(ts11.firstdate,lbeta(ts11.values,ts21.values))
+    
+  end
+  
 end
 
 function Base.diff(ts::TimeSeries)
@@ -296,7 +320,7 @@ function Base.diff(ts::TimeSeries)
 end
 
 function Base.cumsum(ts::TimeSeries,x...)
-  return TimeSeries(ts.firstdate,cumsum(ts.values,x...))
+  return TimeSeries(ts.firstdate,cumsum(convert(Array{AbstractFloat}, ts.values),x...)) # This is weird
 end
 
 function Base.cumprod(ts::TimeSeries,x...)
@@ -395,6 +419,10 @@ function Base.done(ts::TimeSeries,n::Int)
   return done(ts.values,n)
 end
 
+function Base.endof(ts::TimeSeries)
+  return length(ts.values)
+end
+
 function Base.range(ts::TimeSeries)
   return range(ts.firstdate, length(ts.values))
 end
@@ -434,14 +462,14 @@ end
 
 # Exported functions
 
-function pct(ts::TimeSeries)
+function pch(ts::TimeSeries)
   freq      = ts.firstdate.freq;
   pchvalues = [NaN; 100*ts.values[2:end]./ts.values[1:end-1]]
   pchts     = TimeSeries(ts.firstdate,pchvalues)
   return pchts
 end
 
-function apct(ts::TimeSeries)
+function apch(ts::TimeSeries)
   freq      = ts.firstdate.freq;
   pchvalues = [repmat([NaN],freq); 100*ts.values[freq+1:end]./ts.values[1:end-freq]]
   pchts     = TimeSeries(ts.firstdate,pchvalues)
@@ -484,7 +512,7 @@ function extend!(ts::TimeSeries,d::Date)
 
 end
 
-function extend!(ts::TimeSeries,rng::StepRange)
+function extend!(ts::TimeSeries,rng::StepRange{Date,Int})
 
   extend!(ts,rng.start)
   extend!(ts,rng.stop)

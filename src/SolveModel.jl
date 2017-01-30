@@ -285,6 +285,8 @@ function solve!(m::SolveModel)
   if m.tolerance <= resnorm # Evaluate Jacobian at the starting value only if necessary
     Jac   = jacobian(m,x)
   end
+  
+  iter = iter + 1
 
   while m.tolerance <= resnorm && iter <= m.maxiter
 
@@ -315,7 +317,6 @@ function solve!(m::SolveModel)
     end
     
     resnorm = maxabs(res)
-    iter    = iter + 1
 
     if m.display == "iter"
       if damp_iter == 0
@@ -324,6 +325,8 @@ function solve!(m::SolveModel)
         @printf "Iteration: %4.0f, resnorm: %12.4e, damping iterations: %2.0f\n" iter resnorm damp_iter
       end
     end
+    
+    iter = iter + 1
 
   end
 
@@ -336,10 +339,11 @@ function solve!(m::SolveModel)
   end
 
   put_x_to_db!(m,x)
-  m.iter = iter
-  m.resnorm = resnorm
-  m.time = now()
   residual!(m)
+  
+  m.iter    = iter - 1
+  m.resnorm = resnorm
+  m.time    = now()
   
 end
 
