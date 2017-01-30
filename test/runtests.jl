@@ -132,5 +132,90 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     @test mParsed == mExpected
 
   end # testset "Parsing"
+  
+  @testset "Date" begin
+  
+    @testset "Date-monthly" begin
+  
+      fd = mm(2017,11)
+      ld = mm(2018,7)
+      
+      @test isa(fd, OgreTools.Date)
+      @test fd == deepcopy(fd)
+      @test fd < ld
+      @test ld - fd == 8
+      @test ld == fd + (ld - fd)
+      @test fd == ld - (ld - fd)
+      
+      year, per, freq = ypf(fd)
+      @test year  == 2017
+      @test per   == 11
+      @test freq  == 12
+      
+      rng = fd:ld
+      @test isa(rng, StepRange{OgreTools.Date,Int})
+      @test (rng - fd)[1]   == 0
+      @test (rng - fd)[end] == ld - fd
+      
+      str = dat2str(fd)
+      @test str == "2017M11"
+      
+    end
+    
+    @testset "Date-quarterly" begin
+  
+      fd = qq(2017,4)
+      ld = qq(2018,3)
+      
+      @test isa(fd, OgreTools.Date)
+      @test fd == deepcopy(fd)
+      @test fd < ld
+      @test ld - fd == 3
+      @test ld == fd + (ld - fd)
+      @test fd == ld - (ld - fd)
+      
+      year, per, freq = ypf(fd)
+      @test year  == 2017
+      @test per   == 4
+      @test freq  == 4
+      
+      rng = fd:ld
+      @test isa(rng, StepRange{OgreTools.Date,Int})
+      @test (rng - fd)[1]   == 0
+      @test (rng - fd)[end] == ld - fd
+      
+      str = dat2str(fd)
+      @test str == "2017Q4"
+      
+    end
+    
+    @testset "Date-yearly" begin
+  
+      fd = yy(2017)
+      ld = yy(2021)
+      
+      @test isa(fd, OgreTools.Date)
+      @test fd == deepcopy(fd)
+      @test fd < ld
+      @test ld - fd == 4
+      @test ld == fd + (ld - fd)
+      @test fd == ld - (ld - fd)
+      
+      year, per, freq = ypf(fd)
+      @test year  == 2017
+      @test per   == 1
+      @test freq  == 1
+      
+      rng = fd:ld
+      @test isa(rng, StepRange{OgreTools.Date,Int})
+      @test (rng - fd)[1]   == 0
+      @test (rng - fd)[end] == ld - fd
+      
+      str = dat2str(fd)
+      @test str == "2017"
+      
+    end
+  
+  end
 
 end # testset

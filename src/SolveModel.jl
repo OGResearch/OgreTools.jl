@@ -361,7 +361,7 @@ function homotopy!(m::SolveModel,nstep)
     m.db_targ  = m.db_init + db_difi/nstep
     solve!(m)
 
-    @printf "Homotopy step %4.0f, iteration: %4.0f, resnorm: %12.4e\n" i m.iter m.resnorm
+    @printf "Homotopy step %4.0f of %4.0f, iteration: %4.0f, resnorm: %12.4e\n" i nstep m.iter m.resnorm
 
   end
   

@@ -69,7 +69,7 @@ function -(d1::Date,d2::Date)
     return d
   end
 end
-function -(rng::OrdinalRange{Date},d::Date)
+function -(rng::StepRange{Date,Int},d::Date)
   return (rng.start-d) : rng.step : (rng.stop-d)
 end
 
