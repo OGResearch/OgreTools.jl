@@ -16,7 +16,7 @@ export ParsedModel, parseFile
 
 # include definition and methods of the Date type
 include("Date.jl")
-export Date, mm, qq, yy, ypf, dat2str
+export Date, mly, qly, yly, ypf, dat2str
 
 # include definition and methods of the TimeSeries type
 include("TimeSeries.jl")
@@ -35,7 +35,7 @@ export SolveModel, solve!,
        get_endog_ind, get_stacked_jac,
        eval_equations, eval_derivatives,
        residual, residual!, jacobian,
-       dac!, homotopy!,
+       daq!, homotopy!,
        put_x_to_db!, get_x_from_db,
        endogenize!, exogenize!,
        shock!, get_result, check_model,

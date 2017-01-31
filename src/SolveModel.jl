@@ -347,7 +347,7 @@ function solve!(m::SolveModel)
   
 end
 
-function dac!(m::SolveModel,nstep)
+function daq!(m::SolveModel,nstep)
   homotopy!(m::SolveModel,nstep)
 end
 

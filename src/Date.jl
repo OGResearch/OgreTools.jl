@@ -93,15 +93,15 @@ end
 
 # Exported functions
 
-function yy(year::Int)
+function yly(year::Int)
   return Date(1,year)
 end
 
-function qq(year::Int,per::Int)
+function qly(year::Int,per::Int)
   return Date(4,year,per)
 end
 
-function mm(year::Int,per::Int)
+function mly(year::Int,per::Int)
   return Date(12,year,per)
 end
 
