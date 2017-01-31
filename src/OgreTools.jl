@@ -16,7 +16,7 @@ export ParsedModel, parseFile
 
 # include definition and methods of the Date type
 include("Date.jl")
-export Date, mly, qly, yly, ypf, dat2str
+export Date, mm, qq, yy, ypf, dat2str
 
 # include definition and methods of the TimeSeries type
 include("TimeSeries.jl")

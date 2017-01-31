@@ -140,8 +140,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
   
     @testset "Date-monthly" begin
   
-      fd = mly(2017,11)
-      ld = mly(2018,7)
+      fd = mm(2017,11)
+      ld = mm(2018,7)
       
       @test isa(fd, OgreTools.Date)
       
@@ -171,8 +171,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-quarterly" begin
   
-      fd = qly(2017,4)
-      ld = qly(2018,3)
+      fd = qq(2017,4)
+      ld = qq(2018,3)
       
       @test isa(fd, OgreTools.Date)
       @test print(fd) == nothing
@@ -201,8 +201,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-yearly" begin
   
-      fd = yly(2017)
-      ld = yly(2021)
+      fd = yy(2017)
+      ld = yy(2021)
       
       @test isa(fd, OgreTools.Date)
       @test print(fd) == nothing
@@ -231,9 +231,9 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-errors" begin
     
-      dm = mly(2017,1)
-      dq = qly(2017,1)
-      dy = yly(2017)
+      dm = mm(2017,1)
+      dq = qq(2017,1)
+      dy = yy(2017)
       
       @test_throws ErrorException dm == dq
       @test_throws ErrorException dq == dy
@@ -253,7 +253,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
   
   @testset "TimeSeries" begin
   
-    fd = mly(1975,1)
+    fd = mm(1975,1)
     vals = randn(10)
     ts = TimeSeries(fd,vals)
   
@@ -284,8 +284,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       ts[3:end-4] = 30
       @test all(ts.values[3:6] .== 30)
       
-      d1 = mly(1975,2)
-      d2 = mly(1975,5)
+      d1 = mm(1975,2)
+      d2 = mm(1975,5)
       
       ind = d1
       val = 40
@@ -383,11 +383,11 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       @test apch(ts).values[ts.firstdate.freq+1:end]  == 100*(ts.values[ts.firstdate.freq+1:end] ./ ts.values[1:end-ts.firstdate.freq] - 1)
       
       # Misc 5
-      fd1   = mly(2017,1)
+      fd1   = mm(2017,1)
       vals1 = randn(10)
       ts1   = TimeSeries(fd1,vals1)
       
-      fd2   = mly(2018,1)
+      fd2   = mm(2018,1)
       vals2 = randn(10)
       ts2   = TimeSeries(fd2,vals2)
       
@@ -402,5 +402,61 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     end # "TimeSeries-functions"
   
   end # TimeSeries
+  
+  @testset "DataBase" begin
+    
+    # Parameters
+    alpha = 0.4
+    delta = 0.9
+    beta  = 0.99
+    gamma = 0.5
+    rho   = 0.5
+
+    # Steady-state
+    # A = 1
+    # K = ((1/beta-delta)/alpha)^(1/(alpha-1))
+    # I = K*(1-delta)
+    # C = K^alpha - I
+
+    A = 1
+    K = 10
+    I = 1
+    C = 1
+
+    # Define the solution range and create the database
+    fd  = yy(2000)
+    ld  = yy(3000)
+
+    db_init = DataBase(fd:ld)
+
+    # Put variables/parameters into the database
+    db_init["C"] = C # Constants are automatically expanded to the database range
+    db_init["I"] = TimeSeries(fd:ld,I) # But it can be done manually as well
+    db_init["K"] = K
+    db_init["A"] = A
+
+    db_init["alpha"] = alpha
+    db_init["beta"]  = beta
+    db_init["gamma"] = gamma
+    db_init["delta"] = delta
+    db_init["rho"]   = rho
+    db_init["xi"]    = 0
+    
+    mod_ss = parseFile(testModelPath)
+
+    # Set the solution range (this is the longest possible)
+    rng = (fd + mod_ss.maxlag) : (ld - mod_ss.maxlead)
+    
+    @testset "DataBase - basic" begin
+    
+      @test isa(db_init,DataBase)
+      @test db_init             == deepcopy(db_init)
+      # @test show(db_init)       == nothing
+      # @test print(db_init)      == nothing
+      # @test print(db_init,0.1)  == nothing
+      
+    end # "DataBase - basic"
+    
+  end # "DataBase"
 
 end # testset

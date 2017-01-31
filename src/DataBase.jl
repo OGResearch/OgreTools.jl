@@ -177,14 +177,14 @@ function Base.getindex(db::DataBase,inds::Array{String,1})
   end
   return x
 end
-function Base.getindex(db::DataBase,inds::OrdinalRange)
+function Base.getindex(db::DataBase,inds::StepRange)
   x = DataBase(db.firstdate + inds[1] - 1)
   for name in keys(db)
     x[name] = db[name][inds]
   end
   return x
 end
-function Base.getindex(db::DataBase,inds::OrdinalRange{Date})
+function Base.getindex(db::DataBase,inds::StepRange{Date})
   x = DataBase(inds[1])
   for name in keys(db)
     x[name] = db[name][inds]
