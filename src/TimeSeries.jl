@@ -20,16 +20,28 @@ end
 
 function Base.show(io::IO,ts::TimeSeries)
 
-  if isreal(ts)
-    for i = 1:length(ts)
-      print(io,ts.firstdate + i-1)
-      print(io,@sprintf("%15.4e\n",ts.values[i]))
+  if length(ts) > 0
+  
+    if isreal(ts)
+    
+      for i = 1:length(ts)
+        print(io,ts.firstdate + i-1)
+        print(io,@sprintf("%15.4e\n",ts.values[i]))
+      end
+      
+    else
+    
+      for i = 1:length(ts)
+        print(io,ts.firstdate + i-1)
+        print(io,@sprintf("%15.4e + %11.4ei\n",real(ts.values[i]),imag(ts.values[i])))
+      end
+      
     end
+    
   else
-    for i = 1:length(ts)
-      print(io,ts.firstdate + i-1)
-      print(io,@sprintf("%15.4e + %11.4ei\n",real(ts.values[i]),imag(ts.values[i])))
-    end
+  
+    print(io,"Empty time series")
+  
   end
 
 end
@@ -69,16 +81,24 @@ function Base.getindex(ts::TimeSeries,inds::StepRange{Date,Int})
     error("Range must be continuous")
   end
 end
-function Base.getindex(ts::TimeSeries,inds::BitArray{1}) # For logical indexing
+function Base.getindex(ts::TimeSeries,inds::Union{BitArray{1}, Array{Bool,1}}) # For logical indexing
 
-  # The range will be the smallest containing every observation for TRUE-s in INDS
-  fd  = findfirst(inds)
-  ld  = findlast(inds)
+  if any(inds)
+  
+    # The range will be the smallest containing every observation for TRUE-s in INDS
+    fd  = findfirst(inds)
+    ld  = findlast(inds)
 
-  vals = ts[fd:ld].values
-  vals[!inds[fd:ld]] = NaN # Set to values for FALSE-es to NaN
+    vals = ts[fd:ld].values
+    vals[!inds[fd:ld]] = NaN # Set to values for FALSE-es to NaN
 
-  return TimeSeries(ts.firstdate + fd - 1, vals)
+    return TimeSeries(ts.firstdate + fd - 1, vals)
+  
+  else
+  
+    return TimeSeries(ts.firstdate, Array{Number,1}(0))
+  
+  end
 
 end
 
@@ -173,6 +193,14 @@ end
 import Base.>
 function >(x::Real,ts::TimeSeries)
   return x .> ts.values
+end
+
+function Base.isnan(ts::TimeSeries)
+  return isnan(ts.values)
+end
+
+function Base.isreal(ts::TimeSeries)
+  return isreal(ts.values)
 end
 
 function Base.log(ts::TimeSeries)
@@ -387,10 +415,6 @@ function Base.imag(ts::TimeSeries)
   return TimeSeries(ts.firstdate, imag(ts.values))
 end
 
-function Base.isreal(ts::TimeSeries)
-  return isreal(ts.values)
-end
-
 function Base.fft(ts::TimeSeries)
   return TimeSeries(ts.firstdate, fft(convert(Array{Real}, ts.values)))
 end
@@ -464,14 +488,14 @@ end
 
 function pch(ts::TimeSeries)
   freq      = ts.firstdate.freq;
-  pchvalues = [NaN; 100*ts.values[2:end]./ts.values[1:end-1]]
+  pchvalues = [NaN; 100*(ts.values[2:end]./ts.values[1:end-1] - 1)]
   pchts     = TimeSeries(ts.firstdate,pchvalues)
   return pchts
 end
 
 function apch(ts::TimeSeries)
   freq      = ts.firstdate.freq;
-  pchvalues = [repmat([NaN],freq); 100*ts.values[freq+1:end]./ts.values[1:end-freq]]
+  pchvalues = [repmat([NaN],freq); 100*(ts.values[freq+1:end]./ts.values[1:end-freq] - 1)]
   pchts     = TimeSeries(ts.firstdate,pchvalues)
   return pchts
 end

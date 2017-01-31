@@ -1,5 +1,8 @@
 using OgreTools
+using Plots
 using Base.Test
+
+plotly()
 
 # path to the tests directory
 const testPath = dirname(@__FILE__)
@@ -137,10 +140,14 @@ const testModelPath = joinpath(testPath, "test_model.mod")
   
     @testset "Date-monthly" begin
   
-      fd = mm(2017,11)
-      ld = mm(2018,7)
+      fd = mly(2017,11)
+      ld = mly(2018,7)
       
       @test isa(fd, OgreTools.Date)
+      
+      @test print(fd) == nothing
+      @test show(fd)  == nothing
+      
       @test fd == deepcopy(fd)
       @test fd < ld
       @test ld - fd == 8
@@ -164,10 +171,13 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-quarterly" begin
   
-      fd = qq(2017,4)
-      ld = qq(2018,3)
+      fd = qly(2017,4)
+      ld = qly(2018,3)
       
       @test isa(fd, OgreTools.Date)
+      @test print(fd) == nothing
+      @test show(fd)  == nothing
+      
       @test fd == deepcopy(fd)
       @test fd < ld
       @test ld - fd == 3
@@ -191,10 +201,13 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-yearly" begin
   
-      fd = yy(2017)
-      ld = yy(2021)
+      fd = yly(2017)
+      ld = yly(2021)
       
       @test isa(fd, OgreTools.Date)
+      @test print(fd) == nothing
+      @test show(fd)  == nothing
+      
       @test fd == deepcopy(fd)
       @test fd < ld
       @test ld - fd == 4
@@ -218,9 +231,9 @@ const testModelPath = joinpath(testPath, "test_model.mod")
     
     @testset "Date-errors" begin
     
-      dm = mm(2017,1)
-      dq = qq(2017,1)
-      dy = yy(2017)
+      dm = mly(2017,1)
+      dq = qly(2017,1)
+      dy = yly(2017)
       
       @test_throws ErrorException dm == dq
       @test_throws ErrorException dq == dy
@@ -240,7 +253,7 @@ const testModelPath = joinpath(testPath, "test_model.mod")
   
   @testset "TimeSeries" begin
   
-    fd = mm(1975,1)
+    fd = mly(1975,1)
     vals = randn(10)
     ts = TimeSeries(fd,vals)
   
@@ -250,6 +263,9 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       @test ts.firstdate == fd
       @test ts.values == vals
       @test ts == deepcopy(ts)
+      @test print(ts) == nothing
+      @test show(ts) == nothing
+      @test isa(plot(ts), Plots.Plot)
     
     end # "TimeSeries-Basic"
     
@@ -268,8 +284,8 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       ts[3:end-4] = 30
       @test all(ts.values[3:6] .== 30)
       
-      d1 = mm(1975,2)
-      d2 = mm(1975,5)
+      d1 = mly(1975,2)
+      d2 = mly(1975,5)
       
       ind = d1
       val = 40
@@ -331,6 +347,12 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       ts1 = TimeSeries(fd,rand(10)) # For beta
       ts2 = TimeSeries(fd,rand(10)) # For beta
  
+      @test (ts1 + ts2).values == ts1.values  + ts2.values
+      @test (ts1 - ts2).values == ts1.values  - ts2.values
+      @test (ts1 * ts2).values == ts1.values .* ts2.values
+      @test (ts1 / ts2).values == ts1.values ./ ts2.values
+      @test (ts1 ^ ts2).values == ts1.values .^ ts2.values
+      
       @test cov(ts1,ts2) == cov(ts1.values,ts2.values)
       @test cor(ts1,ts2) == cor(ts1.values,ts2.values)
       @test beta(ts1,ts2).values  == beta(ts1.values,ts2.values)
@@ -354,6 +376,27 @@ const testModelPath = joinpath(testPath, "test_model.mod")
       ar =  0.9
       ma = -0.3
       @test filt([1; ma], [1; -ar], ts).values == filt([1; ma], [1; -ar], ts.values)
+      
+      # Misc 4
+      @test diff(ts).values[2:end]  == diff(ts.values)
+      @test pch(ts).values[2:end]   == 100*(ts.values[2:end] ./ ts.values[1:end-1] - 1)
+      @test apch(ts).values[ts.firstdate.freq+1:end]  == 100*(ts.values[ts.firstdate.freq+1:end] ./ ts.values[1:end-ts.firstdate.freq] - 1)
+      
+      # Misc 5
+      fd1   = mly(2017,1)
+      vals1 = randn(10)
+      ts1   = TimeSeries(fd1,vals1)
+      
+      fd2   = mly(2018,1)
+      vals2 = randn(10)
+      ts2   = TimeSeries(fd2,vals2)
+      
+      justify!(ts1,ts2)
+      
+      @test ts1.firstdate == ts2.firstdate == fd1
+      @test length(ts1) == length(ts2)
+      @test all(isnan(ts1.values[end-2:1]))
+      @test all(isnan(ts2.values[1:12]))
       
       
     end # "TimeSeries-functions"
