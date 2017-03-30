@@ -12,12 +12,12 @@ if is_linux()
 end # if
 
 provides(Binaries,
-         URI("https://ftp.ogresearch.com/ModelParser/libparser-win-x$(Sys.WORD_SIZE).zip"),
+         URI("https://nexus.ogresearch.com/repository/maven-releases/com/ogresearch/julia-model-parser/libparser-win-x$(Sys.WORD_SIZE)/0.0.1-1/libparser-win-x$(Sys.WORD_SIZE)-0.0.1-1.zip"),
          libparser,
          os = :Windows)
 
 provides(Binaries,
-        URI("https://ftp.ogresearch.com/ModelParser/libparser-linux-x$(Sys.WORD_SIZE).zip"),
+        URI("https://nexus.ogresearch.com/repository/maven-releases/com/ogresearch/julia-model-parser/libparser-linux-x$(Sys.WORD_SIZE)/0.0.1-1/libparser-linux-x$(Sys.WORD_SIZE)-0.0.1-1.zip"),
         libparser,
         os = :Unix)
 
